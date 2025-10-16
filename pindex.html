@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Inserimento</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f4; }
+        form {
+            background: white;
+            padding: 20px;
+            margin: 50px auto;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        input {
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+        button {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+    <form action="addAlbum.php" method="POST">
+        <h2>Aggiungi album</h2>
+        <input type="text" name="album_name" placeholder="Titolo album" required>
+        <input type="text" name="artist_name" placeholder="Artista" required>
+        <input type="date" name="album_date" placeholder="Data di uscita" required>
+        <input type="text" name="album_genre" placeholder="Genere" required>
+        <input type="text" name="album_cover" placeholder="URL copertina" required>
+        <button type="submit">Salva</button>
+    </form>
+
+    <iframe src="timeline.php" width="100%" height="1000" style="border:none;"></iframe>
+
+</body>
+</html>
