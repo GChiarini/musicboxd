@@ -1,4 +1,5 @@
 <?php
+//php -S 127.0.0.1:5500
 require_once 'includes/db.php';
 require_once 'includes/functions.php';
 
