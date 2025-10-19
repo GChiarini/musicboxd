@@ -4,12 +4,11 @@ $username   = 'root';
 $password   = 'root';
 $dbname     = 'timeline';
 
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-if ($conn->connect_error) {
-    error_log("Connessione al DB fallita: " . $conn->connect_error);
+try {
+    $conn = new PDO("mysql:host=$servername;dbname=$dbname;charset=utf8mb4", $username, $password);
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch (PDOException $e) {
+    error_log("Connessione al DB fallita: " . $e->getMessage());
     exit("Errore interno. Contatta l'amministratore.");
 }
-
-$conn->set_charset('utf8mb4');
 ?>
