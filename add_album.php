@@ -1,79 +1,86 @@
 <?php
-    include 'db.php';
-    include 'functions.php';
+require_once 'includes/db.php';
+require_once 'includes/functions.php';
 
-    if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $album_name  = $_POST["album_name"];
-    $artists = explode(";", $_POST["artist_name"]); // separa artisti con ";"
-    $album_date    = $_POST["album_date"];
-    $album_genre  = /*$_POST["album_genre"]*/"Hip Hop ITA";
-    $album_cover = $_POST["album_cover"];
-    $album_type    = $_POST["album_type"];
-    $album_label    = $_POST["album_label"];
-    // query preparata per sicurezza
-    $stmt = $conn->prepare("INSERT INTO album (album_name, album_date, album_genre, album_cover, album_type, album_label) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("ssssss", $album_name, $album_date, $album_genre, $album_cover, $album_type, $album_label);
-    $stmt->execute();
-    $album_id = $stmt->insert_id;
-    // per ogni artista
-    foreach ($artists as $artist) {
-        $artist = trim($artist);
-        if ($artist === "") continue;
+// Verifica connessione DB
+if (!$conn) {
+    die("Errore di connessione al database.");
+}
 
-        // controlla se esiste
-        $stmt = $conn->prepare("SELECT id FROM artist WHERE artist_name = ?");
-        $stmt->bind_param("s", $artist);
-        $stmt->execute();
-        $result = $stmt->get_result();
+// Gestione POST
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
-        if ($row = $result->fetch_assoc()) {
-            $artist_id = $row["id"];
-        } else {
-            // inserisci nuovo artista
-            $stmt = $conn->prepare("INSERT INTO artist (artist_name) VALUES (?)");
-            $stmt->bind_param("s", $artist);
-            $stmt->execute();
-            $artist_id = $stmt->insert_id;
-        }
-        // collega album ↔ artista
-        $stmt = $conn->prepare("INSERT INTO album_artist (album_id, artist_id) VALUES (?, ?)");
-        $stmt->bind_param("ii", $album_id, $artist_id);
-        $stmt->execute();
-        
+    // Raccolta e sanificazione dati
+    $album_name   = trim($_POST["album_name"] ?? '');
+    $album_date   = trim($_POST["album_date"] ?? '');
+    $album_genre  = trim($_POST["album_genre"] ?? 'Sconosciuto');
+    $album_cover  = trim($_POST["album_cover"] ?? '');
+    $album_type   = trim($_POST["album_type"] ?? '');
+    $album_label  = trim($_POST["album_label"] ?? '');
+    $artist_names = trim($_POST["artist_name"] ?? '');
+
+    if ($album_name === '') {
+        exit("Errore: il nome dell'album è obbligatorio.");
     }
 
-    //redirect alla lista
+    // Gestione artisti multipli
+    $artists = array_filter(array_map('trim', explode(";", $artist_names)));
+    $artist_ids = [];
+
+    foreach ($artists as $name) {
+        $id = findOrCreateArtist($conn, $name);
+        if ($id) {
+            $artist_ids[] = $id;
+        }
+    }
+
+    // Inserimento album e collegamento artisti
+    addAlbumFull($conn, [
+        'name'  => $album_name,
+        'date'  => $album_date,
+        'genre' => $album_genre,
+        'cover' => $album_cover,
+        'type'  => $album_type,
+        'label' => $album_label
+    ], $artist_ids);
+
+    // Redirect alla lista degli album
     header("Location: index.php");
     exit;
-    }
-
+}
 ?>
 
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <title>Aggiungi Album</title>
+    <meta charset="UTF-8">
+    <title>Aggiungi Album</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 30px auto; }
+        form input, form select, form button { display: block; margin: 10px 0; width: 100%; padding: 8px; }
+        button { background: #222; color: white; border: none; cursor: pointer; }
+        button:hover { background: #444; }
+    </style>
 </head>
 <body>
-  <h1>Aggiungi un nuovo album</h1>
-  <form method="post">
-    <input type="text" name="album_name" placeholder="Nome album" required><br>
-    <input type="text" name="artist_name" placeholder="Artista"><br>
-    <input type="date" name="album_date"><br>
-    <input type="text" name="album_genre" placeholder="Genere"><br>
-    <input type="text" name="album_cover" placeholder="URL Cover"><br>
-    <select name="album_type" id="album_type" required>
+<h1>Aggiungi un nuovo album</h1>
+<form method="post">
+    <input type="text" name="album_name" placeholder="Nome album" required>
+    <input type="text" name="artist_name" placeholder="Artisti (separati da ;)">
+    <input type="date" name="album_date">
+    <input type="text" name="album_genre" placeholder="Genere">
+    <input type="text" name="album_cover" placeholder="URL Cover">
+    <select name="album_type" required>
         <option value="LP">LP</option>
         <option value="EP">EP</option>
         <option value="Single">Singolo</option>
         <option value="Mixtape">Mixtape</option>
         <option value="Deluxe">Deluxe</option>
         <option value="Compilation">Compilation</option>
-    </select><br>
-    <input type="text" name="album_label" placeholder="Etichetta"><br>
+    </select>
+    <input type="text" name="album_label" placeholder="Etichetta">
     <button type="submit">Salva</button>
-  </form>
-  <p><a href="index.php">⬅ Torna alla lista</a></p>
+</form>
+<p><a href="index.php">⬅ Torna alla lista</a></p>
 </body>
 </html>
